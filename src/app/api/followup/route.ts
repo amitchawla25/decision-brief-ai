@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { assertAllowedOrigin, assertAppToken } from "@/lib/security";
+// Note: assertAppToken() exists in @/lib/security but is not wired up here.
+// The client sends x-app-token, but it is currently never verified.
+import { assertAllowedOrigin } from "@/lib/security";
 import { rateLimitOrThrow } from "@/lib/rateLimit";
 
 const MAX_INPUT_LENGTH = 10000;

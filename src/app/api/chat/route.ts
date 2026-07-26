@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildExecSystemPrompt } from "@/lib/execPrompt";
-import { assertAllowedOrigin, assertAppToken } from "@/lib/security";
+// Note: assertAppToken() exists in @/lib/security but is not wired up here.
+// The x-app-token header is currently never verified on this route.
+import { assertAllowedOrigin } from "@/lib/security";
 import { rateLimitOrThrow } from "@/lib/rateLimit";
 
 const VALID_LENSES = ["Product", "Revenue", "Ops", "Customer", "Risk"] as const;
@@ -72,14 +74,17 @@ export async function POST(req: NextRequest) {
           "X-Title": "Decision Brief AI",
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          // OpenRouter requires namespaced model slugs ("author/slug").
+          // A bare "gpt-4o-mini" is rejected with a 400.
+          model: "openai/gpt-4o-mini",
           messages,
         }),
       }
     );
 
     if (!response.ok) {
-      console.error("OpenRouter API error:", response.status);
+      const detail = await response.text().catch(() => "");
+      console.error("OpenRouter API error:", response.status, detail);
       return NextResponse.json(
         { error: "AI service unavailable" },
         { status: 503 }
@@ -96,15 +101,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!isValidBrief(briefText)) {
-      return NextResponse.json(
-        { error: "Brief validation failed" },
-        { status: 500 }
-      );
+    // Formatting drift (a missing or reworded heading) is not a reason to throw
+    // away a brief the user already paid for. Return it and flag it instead.
+    const missingSections = findMissingSections(briefText);
+    if (missingSections.length > 0) {
+      console.warn("Brief missing sections:", missingSections.join(", "));
     }
 
     return NextResponse.json(
-      { brief: briefText, lens },
+      {
+        brief: briefText,
+        lens,
+        ...(missingSections.length > 0 ? { missingSections } : {}),
+      },
       {
         headers: {
           "X-RateLimit-Limit": "10",
@@ -141,18 +150,31 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function isValidBrief(text: string): boolean {
-  const requiredHeadings = [
-    "DECISION BEING MADE",
-    "OPTIONS CONSIDERED",
-    "TRADEOFFS",
-    "RECOMMENDED DECISION",
-    "DECISION OWNER",
-    "RISKS & WATCHOUTS",
-    "NEXT 3 ACTIONS",
-  ];
-  const upperText = text.toUpperCase();
-  return requiredHeadings.every((heading) =>
-    upperText.includes(heading)
+const REQUIRED_HEADINGS = [
+  "DECISION BEING MADE",
+  "OPTIONS CONSIDERED",
+  "TRADEOFFS",
+  "RECOMMENDED DECISION",
+  "DECISION OWNER",
+  "RISKS & WATCHOUTS",
+  "NEXT 3 ACTIONS",
+];
+
+/**
+ * Models drift on punctuation ("RISKS AND WATCHOUTS") and sometimes bold the
+ * headings despite the plain-text rule, so compare on a normalized form.
+ */
+function normalizeHeadings(text: string): string {
+  return text
+    .toUpperCase()
+    .replace(/[*#_`]/g, "")
+    .replace(/&/g, "AND")
+    .replace(/\s+/g, " ");
+}
+
+function findMissingSections(text: string): string[] {
+  const normalized = normalizeHeadings(text);
+  return REQUIRED_HEADINGS.filter(
+    (heading) => !normalized.includes(normalizeHeadings(heading))
   );
 }
