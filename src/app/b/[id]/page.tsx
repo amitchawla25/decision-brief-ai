@@ -3,23 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { parseBrief } from "@/lib/briefParser";
 import BriefSection from "@/components/BriefSection";
-import { getRedis } from "@/lib/redis";
-import { sharedBriefKey, type SharedBrief } from "@/lib/sharedBrief";
+import { getSharedBrief } from "@/lib/shareStore";
 
 type PageProps = {
   params: Promise<{ id: string }>;
 };
-
-async function getSharedBrief(id: string): Promise<SharedBrief | null> {
-  const redis = getRedis();
-  if (!redis) return null;
-  try {
-    return await redis.get<SharedBrief>(sharedBriefKey(id));
-  } catch (error) {
-    console.error("Error loading shared brief:", error);
-    return null;
-  }
-}
 
 /**
  * Pull a short, human-readable summary for the social card. The decision itself

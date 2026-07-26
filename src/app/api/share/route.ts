@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { assertAllowedOrigin } from "@/lib/security";
-import { getRedis, isShareEnabled } from "@/lib/redis";
-import {
-  SHARED_BRIEF_TTL_SECONDS,
-  sharedBriefKey,
-  type SharedBrief,
-} from "@/lib/sharedBrief";
+import { isShareEnabled, saveSharedBrief } from "@/lib/shareStore";
 
 const MAX_BRIEF_LENGTH = 20000;
 const VALID_LENSES = ["Product", "Revenue", "Ops", "Customer", "Risk"];
@@ -39,26 +34,16 @@ export async function POST(req: NextRequest) {
 
     const safeLens = VALID_LENSES.includes(lens) ? lens : "Product";
 
-    const redis = getRedis();
-    if (!redis) {
-      return NextResponse.json(
-        { error: "Sharing is not configured on this deployment." },
-        { status: 501 }
-      );
-    }
-
     // 8-char url-safe id from 6 random bytes (~2.8e14 space, collision-safe here).
     const id = crypto.randomBytes(6).toString("base64url");
 
-    const payload: SharedBrief = {
-      brief,
-      lens: safeLens,
-      createdAt: Date.now(),
-    };
-
-    await redis.set(sharedBriefKey(id), payload, {
-      ex: SHARED_BRIEF_TTL_SECONDS,
-    });
+    const saved = await saveSharedBrief(id, brief, safeLens);
+    if (!saved) {
+      return NextResponse.json(
+        { error: "Could not save the brief. Please try again." },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ id });
   } catch (error: any) {
