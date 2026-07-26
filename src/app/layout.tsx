@@ -9,8 +9,21 @@
   });
 
   export const metadata: Metadata = {
-    title: "Decision Brief AI - Transform Notes Into Board-Ready Briefs",
-    description: "AI-powered executive summaries in 30 seconds. Upload documents or paste text to generate structured decision briefs through 5 strategic lenses.",
+    title: "Decision Brief AI — Paste any meeting, get a decision memo",
+    description:
+      "Turn a messy meeting transcript, PRD, or strategy doc into a structured 1-page decision brief — decision, options, tradeoffs, recommendation, owner, risks, and next actions — in 30 seconds. No signup required.",
+    openGraph: {
+      title: "Decision Brief AI — Paste any meeting, get a decision memo",
+      description:
+        "Turn a messy transcript, PRD, or strategy doc into a structured 1-page decision brief in 30 seconds. No signup required.",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Decision Brief AI",
+      description:
+        "Paste any meeting and get a 1-page decision memo your exec will actually read.",
+    },
   };
 
   export default function RootLayout({

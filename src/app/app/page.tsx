@@ -5,6 +5,7 @@
   import { parseBrief } from '@/lib/briefParser';
   import BriefSection from '@/components/BriefSection';
   import FeedbackButton from '@/components/FeedbackButton';
+  import { SAMPLE_TRANSCRIPT, SAMPLE_BRIEF, SAMPLE_LENS } from '@/lib/sampleBrief';
   import Link from 'next/link';
 
   function cleanMarkdown(text: string) {
@@ -56,6 +57,10 @@
     const [isFollowupLoading, setIsFollowupLoading] = useState(false);
     const qaEndRef = useRef<HTMLDivElement>(null);
 
+    // Share state
+    const [isSharing, setIsSharing] = useState(false);
+    const [shareMsg, setShareMsg] = useState('');
+
     // Load saved briefs from localStorage on mount
     useEffect(() => {
       const saved = localStorage.getItem('savedBriefs');
@@ -72,6 +77,26 @@
     useEffect(() => {
       qaEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [qa]);
+
+    // Deep link from the landing page ("See a sample brief") loads the demo.
+    useEffect(() => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('sample') === '1') {
+        loadSample();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Show a fully-formed brief instantly, with no API call, so a first-time
+    // visitor sees real output before doing any work of their own.
+    function loadSample() {
+      setErrorMsg('');
+      setQa([]);
+      setContent(SAMPLE_TRANSCRIPT);
+      setLens(SAMPLE_LENS);
+      setBrief(SAMPLE_BRIEF);
+      setShowInputPanel(false);
+    }
 
     // Save brief to localStorage. Takes the text explicitly because the `brief`
     // state variable is still the previous value when this runs right after
@@ -259,9 +284,47 @@
       setContent('');
       setUploadedFile(null);
       setErrorMsg('');
+      setShareMsg('');
       setShowInputPanel(true);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
+      }
+    }
+
+    // Persist the current brief server-side and copy a public link to it.
+    async function handleShare() {
+      if (!brief || isSharing) return;
+
+      setIsSharing(true);
+      setShareMsg('');
+
+      try {
+        const res = await fetch('/api/share', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ brief, lens }),
+        });
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok || !data?.id) {
+          setShareMsg(
+            data?.error || 'Could not create a share link. Please try again.'
+          );
+          return;
+        }
+
+        const url = `${window.location.origin}/b/${data.id}`;
+        try {
+          await navigator.clipboard.writeText(url);
+          setShareMsg('Link copied — anyone with it can view this brief.');
+        } catch {
+          // Clipboard can be blocked; still surface the URL so it's usable.
+          setShareMsg(`Public link (anyone with it can view): ${url}`);
+        }
+      } catch {
+        setShareMsg('Network error creating share link.');
+      } finally {
+        setIsSharing(false);
       }
     }
 
@@ -468,11 +531,20 @@
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center justify-between gap-3 pt-2">
                   {errorMsg && <span className="text-sm text-red-600">{errorMsg}</span>}
+                  <div className="ml-auto flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={loadSample}
+                    disabled={isLoading || isParsingFile}
+                    className="px-4 py-3 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    ✨ Try a sample
+                  </button>
                   <button
                     type="submit"
-                    className="ml-auto px-6 py-3 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed 
+                    className="px-6 py-3 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed
   transition-colors shadow-lg hover:shadow-xl"
                     disabled={isLoading || isParsingFile || !content.trim()}
                   >
@@ -489,6 +561,7 @@
                       'Generate Decision Brief →'
                     )}
                   </button>
+                  </div>
                 </div>
               </form>
             </div>
@@ -566,18 +639,34 @@
                     {lens} Lens
                   </span>
                 </div>
-                <button
-                  className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors flex items-center 
-  gap-2"
-                  onClick={() => navigator.clipboard.writeText(brief)}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 
-  00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  Copy All
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                    onClick={handleShare}
+                    disabled={isSharing}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                    {isSharing ? 'Creating link…' : 'Share'}
+                  </button>
+                  <button
+                    className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
+                    onClick={() => navigator.clipboard.writeText(brief)}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Copy All
+                  </button>
+                </div>
               </div>
+
+              {shareMsg && (
+                <div className="mb-4 text-sm text-slate-600 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 break-words">
+                  {shareMsg}
+                </div>
+              )}
 
               <div className="space-y-4">
                 {parseBrief(brief).map((section, index) => (

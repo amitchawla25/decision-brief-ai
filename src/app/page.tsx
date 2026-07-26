@@ -21,32 +21,51 @@ import Link from 'next/link';
         {/* Hero Section */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 text-center">
           <h1 className="text-5xl sm:text-6xl font-bold text-slate-900 mb-6 text-balance">
-            Turn Messy Inputs 
-            <span className="text-blue-600"> Into Clear Decisions</span>
+            Paste any meeting. Get a
+            <span className="text-blue-600"> decision memo your exec will actually read.</span>
           </h1>
           <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto text-balance">
-            Decision compression engine for product leaders. Paste your meeting transcript, PRD, or strategy memo and get clear decisions, tradeoffs, and next actions in 30
-  seconds.
+            Drop in a messy transcript, PRD, or strategy thread and get a structured 1-page decision brief — the decision, options, tradeoffs, recommendation, owner, risks, and next actions — in 30 seconds.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link 
+            <Link
               href="/app"
               className="px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
             >
               Generate Your First Brief
             </Link>
-            <a 
-              href="#how-it-works"
+            <Link
+              href="/app?sample=1"
               className="px-8 py-4 bg-white text-slate-700 text-lg font-semibold rounded-lg hover:bg-slate-50 transition-colors border-2 border-slate-200"
             >
-              See How It Works
-            </a>
+              See a sample brief →
+            </Link>
           </div>
 
           {/* Trust Badge */}
           <p className="mt-8 text-sm text-slate-500">
             From meeting → decision → action in 30 seconds • No signup required
           </p>
+
+          {/* What every brief contains — surface the differentiator above the fold */}
+          <div className="mt-12 flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
+            {[
+              'Decision being made',
+              'Options considered',
+              'Tradeoffs',
+              'Recommended decision',
+              'Decision owner',
+              'Risks & watchouts',
+              'Next 3 actions',
+            ].map((label) => (
+              <span
+                key={label}
+                className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-full shadow-sm"
+              >
+                {label}
+              </span>
+            ))}
+          </div>
         </section>
 
         {/* Features Section */}
@@ -217,7 +236,7 @@ import Link from 'next/link';
                 <p className="text-sm">Turn meetings into decision documents.</p>
               </div>
               <div className="flex gap-6 text-sm">
-                <a href="https://github.com/amitstar69/decision-brief-ai" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                <a href="https://github.com/amitchawla25/decision-brief-ai" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
                   GitHub
                 </a>
                 <Link href="/app" className="hover:text-white transition-colors">
@@ -226,7 +245,7 @@ import Link from 'next/link';
               </div>
             </div>
             <div className="mt-8 pt-8 border-t border-slate-800 text-center text-sm">
-              <p>Powered by OpenAI GPT-4 & Next.js • Built with ❤️</p>
+              <p>Powered by GPT-4o-mini via OpenRouter & Next.js • Built with ❤️</p>
             </div>
           </div>
         </footer>
