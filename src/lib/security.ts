@@ -22,9 +22,21 @@ function getAllowedOrigins(): string[] {
     origins.push(configured.replace(/\/$/, ""));
   }
 
-  // The current deployment's own URL (set by Vercel, covers preview deploys)
+  // The current deployment's own immutable URL (set by Vercel on every deploy).
   if (process.env.VERCEL_URL) {
     origins.push(`https://${process.env.VERCEL_URL}`);
+  }
+
+  // The branch-alias preview URL (e.g. <project>-git-<branch>-<team>.vercel.app).
+  // This differs from VERCEL_URL and is the URL Vercel usually links to, so
+  // without it Generate/Share 403 on branch previews.
+  if (process.env.VERCEL_BRANCH_URL) {
+    origins.push(`https://${process.env.VERCEL_BRANCH_URL}`);
+  }
+
+  // The stable production alias, in case APP_URL ever drifts from it.
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    origins.push(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
   }
 
   // Local development

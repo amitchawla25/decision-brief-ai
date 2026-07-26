@@ -20,9 +20,9 @@ import Link from 'next/link';
 
         {/* Hero Section */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 text-center">
-          <h1 className="text-5xl sm:text-6xl font-bold text-slate-900 mb-6 text-balance">
+          <h1 className="text-5xl sm:text-6xl font-bold text-slate-900 mb-6 text-balance leading-[1.05]">
             Paste any meeting. Get a
-            <span className="text-blue-600"> decision memo your exec will actually read.</span>
+            <span className="text-gradient"> decision memo your exec will actually read.</span>
           </h1>
           <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto text-balance">
             Drop in a messy transcript, PRD, or strategy thread and get a structured 1-page decision brief — the decision, options, tradeoffs, recommendation, owner, risks, and next actions — in 30 seconds.
@@ -30,13 +30,13 @@ import Link from 'next/link';
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
               href="/app"
-              className="px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
+              className="px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lift hover:-translate-y-0.5"
             >
               Generate Your First Brief
             </Link>
             <Link
               href="/app?sample=1"
-              className="px-8 py-4 bg-white text-slate-700 text-lg font-semibold rounded-lg hover:bg-slate-50 transition-colors border-2 border-slate-200"
+              className="px-8 py-4 bg-white text-slate-700 text-lg font-semibold rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-colors border-2 border-slate-200 shadow-soft"
             >
               See a sample brief →
             </Link>

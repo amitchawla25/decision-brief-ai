@@ -1,11 +1,17 @@
  import type { Metadata } from "next";
-  import { Inter } from "next/font/google";
+  import { Inter, Sora } from "next/font/google";
   import { Analytics } from "@vercel/analytics/react";
   import "./globals.css";
 
   const inter = Inter({
     subsets: ["latin"],
     variable: "--font-inter"
+  });
+
+  const sora = Sora({
+    subsets: ["latin"],
+    weight: ["500", "600", "700", "800"],
+    variable: "--font-display"
   });
 
   export const metadata: Metadata = {
@@ -33,7 +39,7 @@
   }>) {
     return (
       <html lang="en">
-        <body className={`${inter.variable} font-sans antialiased`}>
+        <body className={`${inter.variable} ${sora.variable} font-sans antialiased`}>
           {children}
           <Analytics />
         </body>

@@ -42,17 +42,17 @@
     const iconBgClass = iconBgClasses[section.color as keyof typeof iconBgClasses] || iconBgClasses.blue;
 
     return (
-      <div className={`bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all ${isFirst ? '' : 'mt-4'}`}>
-        <div 
+      <div className={`bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-soft hover:shadow-card transition-all ${isFirst ? '' : 'mt-4'}`}>
+        <div
           className={`px-5 py-4 border-b cursor-pointer select-none ${colorClass}`}
           onClick={() => setIsCollapsed(!isCollapsed)}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 ${iconBgClass} rounded-lg flex items-center justify-center text-xl`}>
+              <div className={`w-10 h-10 ${iconBgClass} rounded-xl flex items-center justify-center text-xl`}>
                 {section.icon}
               </div>
-              <h3 className="font-semibold text-lg">
+              <h3 className="font-display font-semibold text-lg tracking-tight">
                 {section.title}
               </h3>
             </div>
