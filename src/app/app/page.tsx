@@ -235,8 +235,11 @@
       }
     }
 
-    async function handleFollowup() {
-      if (!question.trim() || !brief || !content) return;
+    // Accepts an explicit question so example-question chips can send directly
+    // without waiting on the async `question` state update.
+    async function handleFollowup(override?: string) {
+      const q = (override ?? question).trim();
+      if (!q || !brief || !content || isFollowupLoading) return;
 
       setIsFollowupLoading(true);
 
@@ -250,18 +253,18 @@
   body: JSON.stringify({
     notes: content,
     summary: brief,
-    question,
+    question: q,
     history: qa,
   }),
 });
         const data = await res.json().catch(() => null);
 
         if (data?.error) {
-          setQa([...qa, { role: 'user', content: question }, { role: 'assistant', content: data.error }]);
+          setQa([...qa, { role: 'user', content: q }, { role: 'assistant', content: data.error }]);
         } else {
           setQa([
             ...qa,
-            { role: 'user', content: question },
+            { role: 'user', content: q },
             { role: 'assistant', content: data.answer },
           ]);
         }
@@ -436,7 +439,7 @@
 
           {/* Input Panel */}
           {showInputPanel ? (
-            <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 mb-8">
+            <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6 mb-8">
               <div className="mb-4">
                 <h1 className="text-2xl font-bold text-slate-900">Generate Decision Brief</h1>
                 <p className="text-sm text-slate-600 mt-1">
@@ -544,8 +547,8 @@
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-3 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed
-  transition-colors shadow-lg hover:shadow-xl"
+                    className="px-6 py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed
+  transition-all shadow-lift hover:-translate-y-0.5 disabled:translate-y-0 disabled:shadow-none"
                     disabled={isLoading || isParsingFile || !content.trim()}
                   >
                     {isLoading ? (
@@ -680,68 +683,116 @@
             </div>
           )}
 
-          {/* Follow-up Questions */}
+          {/* Follow-up — promoted into a prominent card directly under the brief
+              so the brief doesn't read as a dead end. */}
           {brief && (
-            <div className="mt-8">
-              <h3 className="text-xl font-bold text-slate-900 mb-4">Follow-up Discussion</h3>
-
-              {/* Q&A Thread */}
-              {qa.length > 0 && (
-                <div className="space-y-3 mb-4">
-                  {qa.map((entry, i) => (
-                    <div
-                      key={i}
-                      className={`rounded-xl shadow-sm border p-5 ${
-                        entry.role === 'user'
-                          ? 'bg-white border-slate-200'
-                          : 'bg-blue-50 border-blue-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          entry.role === 'user' 
-                            ? 'bg-slate-100' 
-                            : 'bg-blue-100'
-                        }`}>
-                          {entry.role === 'user' ? '👤' : '🤖'}
-                        </div>
-                        <span className="text-sm font-semibold text-slate-900">
-                          {entry.role === 'user' ? 'You' : 'Decision Analyst'}
-                        </span>
-                      </div>
-                      <p className="text-sm text-slate-700 leading-relaxed">
-                        {cleanMarkdown(entry.content)}
+            <div className="mt-10">
+              <div className="rounded-2xl border border-blue-200 bg-white shadow-card overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center text-xl">
+                      💬
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">
+                        Ask a follow-up
+                      </h3>
+                      <p className="text-sm text-blue-100">
+                        Pressure-test the recommendation, clarify a section, or explore alternatives.
                       </p>
                     </div>
-                  ))}
-                  <div ref={qaEndRef} />
+                  </div>
                 </div>
-              )}
 
-              {/* Input at Bottom */}
-              <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-4">
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 
-  focus:border-transparent"
-                    placeholder="Ask a follow-up question..."
-                    value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleFollowup()}
-                    disabled={isFollowupLoading}
-                  />
-                  <button
-                    onClick={handleFollowup}
-                    className="px-6 py-3 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
-                    disabled={isFollowupLoading || !question.trim()}
-                  >
-                    {isFollowupLoading ? 'Thinking...' : 'Ask'}
-                  </button>
+                <div className="p-6">
+                  {/* Q&A Thread */}
+                  {qa.length > 0 && (
+                    <div className="space-y-3 mb-5">
+                      {qa.map((entry, i) => (
+                        <div
+                          key={i}
+                          className={`rounded-xl border p-5 ${
+                            entry.role === 'user'
+                              ? 'bg-slate-50 border-slate-200'
+                              : 'bg-blue-50 border-blue-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                              entry.role === 'user'
+                                ? 'bg-slate-200'
+                                : 'bg-blue-100'
+                            }`}>
+                              {entry.role === 'user' ? '👤' : '🤖'}
+                            </div>
+                            <span className="text-sm font-semibold text-slate-900">
+                              {entry.role === 'user' ? 'You' : 'Decision Analyst'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                            {cleanMarkdown(entry.content)}
+                          </p>
+                        </div>
+                      ))}
+                      <div ref={qaEndRef} />
+                    </div>
+                  )}
+
+                  {/* Example question chips — prefill + send, so the follow-up is
+                      obviously actionable rather than a passive empty box. */}
+                  {qa.length === 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {[
+                        'What are the biggest risks?',
+                        'Who should own this decision?',
+                        'What could change the recommendation?',
+                        "What's the timeline?",
+                      ].map((example) => (
+                        <button
+                          key={example}
+                          type="button"
+                          onClick={() => {
+                            setQuestion(example);
+                            handleFollowup(example);
+                          }}
+                          disabled={isFollowupLoading}
+                          className="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-full hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {example}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Ask anything about this decision…"
+                      value={question}
+                      onChange={(e) => setQuestion(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleFollowup()}
+                      disabled={isFollowupLoading}
+                    />
+                    <button
+                      onClick={() => handleFollowup()}
+                      className="px-6 py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-soft"
+                      disabled={isFollowupLoading || !question.trim()}
+                    >
+                      {isFollowupLoading ? (
+                        <span className="flex items-center gap-2">
+                          <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                          </svg>
+                          Thinking…
+                        </span>
+                      ) : (
+                        'Ask'
+                      )}
+                    </button>
+                  </div>
                 </div>
-                <p className="text-xs text-slate-500 mt-2">
-                  Ask about risks, decision makers, timelines, or clarify any section
-                </p>
               </div>
             </div>
           )}

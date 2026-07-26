@@ -8,12 +8,22 @@
     }
 
     body {
-      @apply font-sans;
+      @apply font-sans text-slate-900 antialiased;
+    }
+
+    /* Headings use the display face with tighter tracking for a premium feel. */
+    h1, h2, h3 {
+      @apply font-display tracking-tight;
     }
   }
 
   @layer utilities {
     .text-balance {
       text-wrap: balance;
+    }
+
+    /* Subtle gradient text used for hero accents. */
+    .text-gradient {
+      @apply bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent;
     }
   }
