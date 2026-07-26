@@ -6,6 +6,15 @@ export type BriefSection = {
     color: string;
   };
 
+  function normalizeHeading(text: string): string {
+    return text
+      .toUpperCase()
+      .replace(/[*#_`:]/g, '')
+      .replace(/&/g, 'AND')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   export function parseBrief(briefText: string): BriefSection[] {
     const sections: BriefSection[] = [];
 
@@ -60,11 +69,19 @@ export type BriefSection = {
 
     for (const line of lines) {
       const trimmedLine = line.trim();
+      const normalizedLine = normalizeHeading(trimmedLine);
 
-      // Check if this line is a section header
-      const matchedConfig = sectionConfig.find(config =>
-        trimmedLine.toUpperCase().includes(config.title)
-      );
+      // Check if this line is a section header. Match on a normalized form so
+      // punctuation drift ("RISKS AND WATCHOUTS") and stray markdown still
+      // resolve to the right section, and require the line to be roughly the
+      // length of the heading so prose mentioning it isn't mistaken for one.
+      const matchedConfig = sectionConfig.find(config => {
+        const normalizedTitle = normalizeHeading(config.title);
+        return (
+          normalizedLine.includes(normalizedTitle) &&
+          normalizedLine.length <= normalizedTitle.length + 10
+        );
+      });
 
       if (matchedConfig) {
         // Save previous section if exists

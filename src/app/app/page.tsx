@@ -73,16 +73,19 @@
       qaEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [qa]);
 
-    // Save brief to localStorage
-    function saveBriefToHistory() {
-      const title = content.slice(0, 60) + (content.length > 60 ? '...' : '');
+    // Save brief to localStorage. Takes the text explicitly because the `brief`
+    // state variable is still the previous value when this runs right after
+    // generation.
+    function saveBriefToHistory(sourceContent: string, briefText: string) {
+      const title =
+        sourceContent.slice(0, 60) + (sourceContent.length > 60 ? '...' : '');
       const newBrief: SavedBrief = {
         id: Date.now().toString(),
         title,
-        content,
-        brief,
+        content: sourceContent,
+        brief: briefText,
         lens,
-        qa,
+        qa: [],
         timestamp: Date.now(),
       };
 
@@ -191,11 +194,15 @@
           return;
         }
 
-        const generatedBrief = data.brief || '';
-        setBrief(generatedBrief);
+        const generatedBrief = data?.brief || '';
 
-        // Save to localStorage after successful generation
-        setTimeout(() => saveBriefToHistory(), 500);
+        if (!generatedBrief) {
+          setErrorMsg('The AI returned an empty brief. Please try again.');
+          return;
+        }
+
+        setBrief(generatedBrief);
+        saveBriefToHistory(trimmed, generatedBrief);
       } catch (err) {
         setErrorMsg('Network error');
       } finally {
@@ -495,8 +502,29 @@
             </button>
           )}
 
+          {/* Error banner. Lives outside the input panel because the panel is
+              collapsed on submit, which would otherwise hide the reason the
+              brief never appeared. */}
+          {errorMsg && !isLoading && (
+            <div
+              role="alert"
+              className="mb-8 bg-red-50 border border-red-200 rounded-xl p-6"
+            >
+              <p className="text-sm font-semibold text-red-800 mb-1">
+                Couldn&apos;t generate your brief
+              </p>
+              <p className="text-sm text-red-700">{errorMsg}</p>
+              <button
+                onClick={() => setShowInputPanel(true)}
+                className="mt-3 text-sm font-medium text-red-700 hover:text-red-900 underline"
+              >
+                Edit input and try again
+              </button>
+            </div>
+          )}
+
           {/* Output Section */}
-          {!brief && !isLoading && !showInputPanel && (
+          {!brief && !isLoading && !showInputPanel && !errorMsg && (
             <div className="bg-white rounded-xl border-2 border-dashed border-slate-300 p-12 text-center">
               <div className="text-5xl mb-4">📋</div>
               <p className="text-slate-500 text-lg font-medium mb-2">No brief generated yet</p>
